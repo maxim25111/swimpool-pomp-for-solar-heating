@@ -1,0 +1,85 @@
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+void setup() 
+{
+  Serial.begin(9600);
+
+  pinMode(A0, INPUT);
+  digitalWrite(4, 0);
+  pinMode(4, OUTPUT);
+  
+  if( !display.begin(SSD1306_SWITCHCAPVCC, 0x3C) ) // Address 0x3D for 128x64
+  { 
+    Serial.println("SSD1306 allocation failed");
+    for(;;); // Don't proceed, loop forever
+  }
+
+}
+
+String mode = "OF" ;
+String mode2 = "OF";
+long unsigned lastTimeOn = millis;
+long unsigned lastTimeOf = lastTimeOn;
+long unsigned now;
+
+void loop() 
+{
+  //Serial.println("working");
+  now = millis();
+  
+  int value = analogRead(A0);
+
+  float actual = 24.5 / 521.0;
+  float temp = actual * (float) value;
+
+  if ( temp > 29.0 )
+  {
+    mode = "ON";
+  }
+  else
+  {
+    mode = "OF";
+  }
+
+  if ( mode == "OF" && mode2 == "OF" && now > lastTimeOn + 10000 )
+  {
+    mode2 = "ON";
+    digitalWrite(4, 1);
+    lastTimeOn = now;
+    lastTimeOf = now;
+  }
+    
+  if ( mode == "OF" && mode2 == "ON" && now > lastTimeOf + 2000 )
+  {
+    mode2 = "OF";
+    digitalWrite(4, 0);
+    lastTimeOn = now;
+    lastTimeOf = now;
+  }
+
+  if ( mode == "ON" )
+  {
+    digitalWrite(4, 1);
+  }
+
+  display.clearDisplay();
+
+  display.display();
+
+  display.setTextSize(2);             // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE);        // Draw white text
+  display.setCursor(0,0);             // Start at top-left corner
+  display.println("Temp ");
+  display.println(temp);
+  display.println();
+  display.print(mode); display.print("  "); display.println(mode2);
+  
+  display.display();
+  delay(2000);
+}
